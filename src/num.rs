@@ -250,10 +250,10 @@ new_trait! {
 		, @for<'a> ShrAssign<&'a usize>
 	{
 		/// The signed integer of this bit width.
-		type Signed: Integral;
+		type Signed: Signed;
 
 		/// The unsigned integer of this bit width.
-		type Unsigned: Integral;
+		type Unsigned: Unsigned;
 
 		/// The type’s zero value.
 		const ZERO: Self;
