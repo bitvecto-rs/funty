@@ -2,8 +2,14 @@
 
 use crate::Fundamental;
 use core::{
+	borrow::BorrowMut,
+	convert::{
+		AsMut,
+		AsRef,
+	},
 	fmt::{
 		Binary,
+		Debug,
 		LowerExp,
 		LowerHex,
 		Octal,
@@ -28,12 +34,20 @@ use core::{
 		BitOrAssign,
 		BitXor,
 		BitXorAssign,
+		Bound,
 		Div,
 		DivAssign,
+		IndexMut,
 		Mul,
 		MulAssign,
 		Neg,
 		Not,
+		Range,
+		RangeFrom,
+		RangeFull,
+		RangeInclusive,
+		RangeTo,
+		RangeToInclusive,
 		Rem,
 		RemAssign,
 		Shl,
@@ -43,7 +57,70 @@ use core::{
 		Sub,
 		SubAssign,
 	},
+	panic::{
+		RefUnwindSafe,
+		UnwindSafe,
+	},
 };
+
+/// Declares that a type is an array of bytes `[u8; N]`
+/// that corresponds to a `Numeric` type's byte representation.
+pub trait NumericBytes:
+	AsRef<[u8]>
+	+ AsMut<[u8]>
+	+ BorrowMut<[u8]>
+	+ Copy
+	+ Debug
+	+ Default
+	+ Eq
+	+ Hash
+	+ IndexMut<usize, Output = u8>
+	+ IndexMut<(Bound<usize>, Bound<usize>), Output = [u8]>
+	+ IndexMut<Range<usize>, Output = [u8]>
+	+ IndexMut<RangeFrom<usize>, Output = [u8]>
+	+ IndexMut<RangeFull, Output = [u8]>
+	+ IndexMut<RangeInclusive<usize>, Output = [u8]>
+	+ IndexMut<RangeTo<usize>, Output = [u8]>
+	+ IndexMut<RangeToInclusive<usize>, Output = [u8]>
+	+ Ord
+	+ PartialEq<[u8]>
+	+ for<'a> PartialEq<&'a [u8]>
+	+ for<'a> PartialEq<&'a mut [u8]>
+	+ for<'a> TryFrom<&'a [u8]>
+	+ for<'a> TryFrom<&'a mut [u8]>
+	+ RefUnwindSafe
+	+ Send
+	+ Sync
+	+ Unpin
+	+ UnwindSafe
+{
+}
+
+/// Extra trait implementations for `NumericBytes` when the `std` feature is enabled.
+#[cfg(feature = "std")]
+pub trait NumericBytesStd: NumericBytes
+	+ TryFrom<Vec<u8>>
+	+ Into<Vec<u8>>
+	+ Into<Box<[u8]>>
+{
+}
+
+macro_rules! impl_numeric_bytes {
+	($n:expr) => {
+		impl NumericBytes for [u8; $n] {
+		}
+
+		#[cfg(feature = "std")]
+		impl NumericBytesStd for [u8; $n] {
+		}
+	}
+}
+
+impl_numeric_bytes!(1);
+impl_numeric_bytes!(2);
+impl_numeric_bytes!(4);
+impl_numeric_bytes!(8);
+impl_numeric_bytes!(16);
 
 new_trait! {
 	/// Declares that a type is an abstract number.
@@ -80,7 +157,7 @@ new_trait! {
 		, @for<'a> RemAssign<&'a Self>
 	{
 		/// The `[u8; N]` byte array that stores values of `Self`.
-		type Bytes;
+		type Bytes: NumericBytes;
 
 		new_trait! { i32 @
 			fn to_be_bytes(self) -> Self::Bytes;
